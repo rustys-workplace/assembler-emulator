@@ -1,0 +1,183 @@
+================================================================================
+CLAIMS DOCUMENT: IITPSx PROCESSOR TOOLCHAIN
+Author: ARNAV RASTOGI
+User ID: ARNAV RASTOGI
+Declaration of Authorship:
+I hereby declare that the codebase (asm.c, emu.c, Makefile, bubblesort.asm,
+and all accompanying test suites) is entirely my own original work, developed
+in strict accordance with the CS2102 IITPSx Processor specifications and ISO C89.
+================================================================================
+
+This document details full compliance with every requirement in the project
+specification and marking scheme.
+
+--------------------------------------------------------------------------------
+1. GENERAL REQUIREMENTS
+--------------------------------------------------------------------------------
+[CLAIM 1.1] Authorship & Identification:
+- Every source file (asm.c, emu.c, Makefile, bubblesort.asm, test1.asm,
+  test2.asm, test3.asm, test4.asm, test5.asm, test6.asm, test7.asm,
+  test_sum.asm, test_poly.asm, test_divzero.asm, test_triangle.asm) contains my name ("ARNAV RASTOGI"), user ID
+  ("ARNAV RASTOGI"), and an explicit declaration of authorship in the header comments.
+
+[CLAIM 1.2] Strict ISO C89 Compliance (Zero Errors):
+- Both asm.c and emu.c strictly adhere to the ANSI/ISO C89 standard.
+- Verified compilation with:
+    gcc -std=c89 -pedantic -Wall -Wpointer-arith -Wwrite-strings -Wstrict-prototypes -o asm asm.c
+    gcc -std=c89 -pedantic -Wall -Wpointer-arith -Wwrite-strings -Wstrict-prototypes -o emu emu.c
+- Both binaries compile cleanly with zero errors.
+
+[CLAIM 1.3] Zero Compiler Warnings:
+- Even when compiling with maximum pedantic and warning flags (-Wall -Wextra
+  -Wpointer-arith -Wwrite-strings -Wstrict-prototypes -pedantic), both asm.c
+  and emu.c compile with zero warnings.
+
+[CLAIM 1.4] Robust I/O and Standard Compliance:
+- All input reading is handled using fgets() into guarded fixed-size buffers,
+  avoiding gets() or naive fscanf() vulnerabilities.
+- EOF conditions are handled correctly using integer types.
+- Numeric parsing uses strtol() with strict validation of prefixes (0x, 0, decimal)
+  and trailing characters.
+
+[CLAIM 1.5] Code Structure, Naming, and Documentation:
+- Consistent, clean indentation (4 spaces) throughout.
+- Clear modular structure separating lexical scanning, parsing, symbol table
+  management, code generation, execution loop, and diagnostics.
+- Explanatory function headers and inline comments detailing ISA semantics and logic.
+
+--------------------------------------------------------------------------------
+2. TWO-PASS ASSEMBLER (asm.c) - 60%
+--------------------------------------------------------------------------------
+[CLAIM 2.1] Single Routine Architecture for Both Passes:
+- The assembler implements the exact required design: a single parameterized routine
+  `static int assemble_pass(FILE *in, int pass, AssemblerContext *ctx)`
+  called sequentially for Pass 1 (pass = 1) and Pass 2 (pass = 2).
+- Pass 1 records labels into the Symbol Table, checks syntax, tracks PC, and
+  does not fail on forward references or emit binary code.
+- Pass 2 rewinds the input file, resolves all label addresses and branch displacements,
+  detects undefined labels, emits little-endian 32-bit binary words, and outputs
+  the listing (.lst) and diagnostic log (.log) files.
+
+[CLAIM 2.2] Comprehensive Label & Syntax Error Diagnostics:
+- Reports exact line numbers and descriptive diagnostic messages for:
+  * Duplicate label definitions (e.g., test2.asm: "ERR: Line 7: duplicate label 'label'")
+  * Undefined/missing labels (e.g., test2.asm: "ERR: Line 8: undefined label 'nonesuch'")
+  * Unknown/bogus mnemonics (e.g., test2.asm: "ERR: Line 14: unknown mnemonic 'fibble'")
+  * Missing operands for 1-operand instructions (e.g., test2.asm: "ERR: Line 10: missing operand")
+  * Unexpected operands for 0-operand instructions (e.g., test2.asm: "ERR: Line 11: unexpected operand")
+  * Extra characters at end of line (e.g., test2.asm: "ERR: Line 12: extra on end of line ', 6'")
+  * Malformed/bogus label names (e.g., test2.asm: "ERR: Line 13: invalid label '0def'")
+  * Invalid numeric constants (e.g., test2.asm: "ERR: Line 9: undefined label '08ge'")
+  * Misplaced SET directives (e.g., test7.asm: "ERR: Line 23: SET must follow a label")
+  * Warnings for declared but unused labels (e.g., test1.asm: "WARN: Label 'label' defined but never used")
+  * Warnings for backward jumps / possible infinite loops (e.g., test1.asm: "WARN: Line 9: possible infinite loop (backward jump)")
+
+[CLAIM 2.3] Table-Driven Instruction Lookup:
+- Uses a static `INSTRUCTION_TABLE` defining all 21 ISA instructions plus directives:
+  `{mnemonic, opcode, operand_type}`
+- Cleanly categorizes operands into OP_TYPE_NONE, OP_TYPE_VALUE, OP_TYPE_OFFSET,
+  and OP_TYPE_BRANCH.
+
+[CLAIM 2.4] Advanced Listing Generation (.lst):
+- Formats addresses as 8 hexadecimal digits and machine words as 8 hexadecimal digits.
+- Accompanying mnemonics and operands are decoded and aligned.
+- For PC-relative branch instructions (call, brz, brlz, br), if the branch displacement
+  resolves to an address matching a known label, the assembler displays the label
+  name in the listing (e.g., "00000003 FFFFFF11 loop: br loop").
+- Standalone label definitions are recorded on their own lines showing the address
+  and label name (e.g., "00000000          label:").
+
+[CLAIM 2.5] SET Pseudo-Instruction Support:
+- Full implementation of the `SET` symbol table directive.
+- Demonstrated in test3.asm (`val: SET 75` and `val2: SET 66`), assigning the specified
+  numeric value to the label without emitting code or incrementing PC.
+
+[CLAIM 2.6] Extended Arithmetic Instructions (mul & div):
+- Both `mul` (opcode 19) and `div` (opcode 20) are fully supported in the assembler
+  as 0-operand instructions, verified with test4.asm.
+
+--------------------------------------------------------------------------------
+3. BUBBLE SORT IMPLEMENTATION (bubblesort.asm)
+--------------------------------------------------------------------------------
+[CLAIM 3.1] Complete In-Place Bubble Sort:
+- Fully working in-place Bubble Sort implemented in `bubblesort.asm`.
+- Allocates an unsorted array of 10 signed 32-bit integers:
+  [25, -4, 13, 0, 99, -50, 42, 8, 1, 7]
+- Stores array length (`count: data 10`).
+- Establishes a stack frame at address 0x1000 for local variables (i, j, n, ptr_j,
+  elem_j, elem_j1) using `a2sp` and `adj`.
+- Employs nested loops comparing adjacent elements and swapping them in memory
+  via `stnl 0` and `stnl 1`.
+- Terminates cleanly with `HALT`.
+- Execution verified in `emu`: sorts the array completely into ascending order:
+  [-50, -4, 0, 1, 7, 8, 13, 25, 42, 99], verified via memory dump.
+
+--------------------------------------------------------------------------------
+4. ARCHITECTURAL EMULATOR (emu.c) - 25%
+--------------------------------------------------------------------------------
+[CLAIM 4.1] Memory Model & Binary Loader:
+- Allocates a 32-bit simulated memory of 262,144 words (1 MB) initialized to zero.
+- Accurately reads 32-bit little-endian binary words from object files starting at
+  address 0.
+
+[CLAIM 4.2] Register & Fetch-Execute Loop:
+- Simulates all 4 registers: A, B, PC, and SP.
+- Correctly implements implicit PC increment: `PC = PC + 1` is executed BEFORE
+  evaluating instruction semantics.
+- Extracts 8-bit opcode and properly sign-extends the 24-bit 2's complement operand
+  to 32 bits.
+
+[CLAIM 4.3] Full ISA Semantic Compliance:
+- Accurately executes all 21 instructions:
+  ldc, adc, ldl, stl, ldnl, stnl, add, sub, shl, shr, adj, a2sp, sp2a,
+  call, return, brz, brlz, br, HALT, mul, div.
+
+[CLAIM 4.4] mul, div, and Division-by-Zero Handling:
+- Correctly evaluates `A = B * A` for `mul`.
+- Correctly evaluates `A = B / A` for `div`.
+- Automatically checks for `A == 0` when executing `div`.
+  Upon division by zero:
+  * Halts execution immediately.
+  * Outputs an explicit runtime error message to stderr.
+  * Dumps register state and memory.
+  * Returns exit code 1.
+  Verified with `test_divzero.asm`.
+
+[CLAIM 4.5] Fault Handling & Errant Program Traps:
+- Traps out-of-bounds memory accesses for instruction fetch and data reads/writes
+  (ldl, stl, ldnl, stnl).
+- Traps illegal/unrecognized opcodes.
+- Traps infinite loops via configurable cycle cap (`-limit <N>`, default 10,000,000).
+
+[CLAIM 4.6] CLI Flags & Dump Facilities:
+- `-trace`: Prints step-by-step trace of PC, SP, A, B, and decoded instructions.
+- `-dump` / `-after`: Outputs full formatted 4-word memory dump upon termination.
+- `-before`: Outputs memory dump before program execution begins.
+- `-read` & `-write`: Logs individual memory load and store events.
+- `-wipe`: Wipes written flags before execution.
+- `-isa`: Displays formatted ISA documentation table.
+- Simultaneously writes execution trace and summary to `<program>.emu.log`.
+
+--------------------------------------------------------------------------------
+5. TEST CASES & VERIFICATION SUITE - 15%
+--------------------------------------------------------------------------------
+[CLAIM 5.1] Comprehensive Algorithm Suite:
+1. `test1.asm`: Valid assembly test covering negative literals, forward/backward
+   branches, and labels as data pointers.
+2. `test2.asm`: Exhaustive error-checking test exercising duplicate labels,
+   missing/unexpected operands, bogus mnemonics, invalid numbers, and extra tokens.
+3. `test3.asm`: SET pseudo-instruction verification (A = 75 + 66 = 141).
+4. `test4.asm`: Arithmetic test verifying mul and div ((6 * 7) / 2 = 21).
+5. `bubblesort.asm`: Complete in-place Bubble Sort sorting 10 integers in ascending order.
+6. `test_sum.asm`: Loop algorithm calculating sum of first 10 integers (1+2+...+10 = 55).
+7. `test_poly.asm`: Evaluates polynomial P(x) = 3*x^2 + 5*x + 7 for x=4 (result = 75).
+8. `test_divzero.asm`: Deliberate division by zero verifying emulator error trap.
+9. `test_triangle.asm`: Deep recursive calculation of Pascal's triangle row 10.
+10. `test5.asm`: Valid assembly test exercising SET bound, data word, local stack loop summing 1..10, and memory write.
+11. `test6.asm`: Valid assembly test exercising multiple empty labels, arithmetic, infinite backward branch, code after branch, and unused labels.
+12. `test7.asm`: Comprehensive error-checking test suite verifying diagnostics for bogus labels, missing/unexpected operands, unknown mnemonics, comments, duplicate labels, and invalid SET directives.
+
+[CLAIM 5.2] Automated Verification (make test):
+- Single-command automated verification runs `make test`, compiling both tools
+  under strict ISO C89 and validating all 12 test programs.
+================================================================================

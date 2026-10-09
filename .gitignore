@@ -1,0 +1,24 @@
+# Compiled executable binaries
+asm
+emu
+*.exe
+*.out
+
+# Compiled binary object files
+*.o
+
+# Assembler and emulator test output logs and listings
+*.lst
+*.log
+*.emu.log
+
+# Course distribution directory (excluded from repository)
+MiniProject/
+
+# IDE, editor, and operating system artifacts
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
