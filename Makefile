@@ -15,7 +15,7 @@ RM      = rm -f
 PROGS   = asm emu
 TESTS   = test1 test3 test4 test5 test6 test_sum test_poly test_triangle bubblesort
 
-.PHONY: all clean test verify help
+.PHONY: all clean test verify help serve web
 
 all: $(PROGS)
 
@@ -79,6 +79,13 @@ test: all
 	@echo "                   ALL TESTS COMPLETED SUCCESSFULLY                   "
 	@echo "======================================================================"
 
+serve:
+	@echo "Serving IITPSx Studio (100% Client-Side Web App) at http://localhost:8000 ..."
+	@echo "Or right-click web/index.html -> 'Open with Live Server' in VS Code."
+	python3 -m http.server 8000
+
+web: serve
+
 clean:
 	$(RM) $(PROGS) *.o *.lst *.log *.emu.log
 
@@ -86,4 +93,5 @@ help:
 	@echo "Targets:"
 	@echo "  all     - Build asm and emu binaries"
 	@echo "  test    - Run complete automated test suite"
+	@echo "  serve   - Launch IITPSx Web Studio backend & frontend server"
 	@echo "  clean   - Remove generated binaries and test logs"
