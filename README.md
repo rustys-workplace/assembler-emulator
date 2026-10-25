@@ -134,6 +134,8 @@ The listing file presents an 8-digit hexadecimal address, 8-digit machine word, 
 00000008 00000012 HALT
 ```
 
+Passing `-hex` (e.g. `./asm test1.asm -hex`) switches the listing to the spec's "simple memory dump" form: only the 32-bit machine words in hex, one per line, with label-only lines omitted.
+
 ---
 
 ## 5. Architectural Emulator Design (`emu.c`)
