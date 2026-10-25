@@ -873,8 +873,9 @@ static int write_object_file(const char *filename, const AssemblerContext *ctx) 
 /*
  * Writes the formatted human-readable listing file (.lst) showing addresses,
  * machine words, instructions, labels, and diagnostics.
+ * If hex_only is set, writes only the 32-bit machine words in hex, one per line.
  */
-static int write_listing_file(const char *filename, const AssemblerContext *ctx) {
+static int write_listing_file(const char *filename, const AssemblerContext *ctx, int hex_only) {
     FILE *fp = fopen(filename, "w");
     int i;
     if (fp == NULL) {
@@ -883,7 +884,12 @@ static int write_listing_file(const char *filename, const AssemblerContext *ctx)
     }
     for (i = 0; i < ctx->listing_count; i++) {
         const ListingRecord *rec = &ctx->listing[i];
-        if (rec->error_text[0] != '\0') {
+        if (hex_only) {
+            /* Skip label-only lines: they emit no machine word */
+            if (rec->has_code) {
+                fprintf(fp, "%08X\n", (unsigned int)rec->code);
+            }
+        } else if (rec->error_text[0] != '\0') {
             fprintf(fp, "%s  %s\n", rec->text, rec->error_text);
         } else {
             fprintf(fp, "%s\n", rec->text);
@@ -942,11 +948,12 @@ int main(int argc, char **argv) {
     char log_name[MAX_TEXT_LEN];
     const char *src_file = NULL;
     char *dot;
+    int hex_only = 0;  /* 1: .lst contains only hex machine words (-hex flag) */
     int i;
 
     /* Validate minimal command-line usage */
     if (argc < 2) {
-        fprintf(stderr, "Usage: %s <source.asm> [-o output.o] [-l listing.lst] [-log file.log]\n", argv[0]);
+        fprintf(stderr, "Usage: %s <source.asm> [-o output.o] [-l listing.lst] [-log file.log] [-hex]\n", argv[0]);
         return 1;
     }
 
@@ -972,6 +979,8 @@ int main(int argc, char **argv) {
             safe_strcpy(lst_name, argv[++i], sizeof(lst_name));
         } else if (strcmp(argv[i], "-log") == 0 && i + 1 < argc) {
             safe_strcpy(log_name, argv[++i], sizeof(log_name));
+        } else if (strcmp(argv[i], "-hex") == 0) {
+            hex_only = 1;
         }
     }
 
@@ -1005,7 +1014,7 @@ int main(int argc, char **argv) {
     check_unused_labels(&ctx);
 
     /* Generate human-readable listing and diagnostic log files */
-    write_listing_file(lst_name, &ctx);
+    write_listing_file(lst_name, &ctx, hex_only);
     write_log_file(log_name, &ctx);
 
     /* If assembly errors were encountered, report and terminate with failure status */
