@@ -1,0 +1,12 @@
+# ==============================================================================
+# IITPSx Processor Toolchain - System and Build Requirements
+# ==============================================================================
+#
+# Primary Build & Toolchain Requirements:
+# - GCC (GNU Compiler Collection) supporting ANSI/ISO C89: gcc (>= 4.8)
+# - GNU Make: make (>= 3.81)
+# - POSIX-compliant environment (Linux / macOS) or MinGW-w64 (Windows)
+# - Standard C library (glibc)
+#
+# Python Requirements (for verification, testing, and inspection scripts):
+# python>=3.8

@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-950">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IITPSx Processor Studio - Assembler & Toolchain IDE</title>
+  <!-- Local Self-Contained Tailwind & Component CSS (100% Offline Compatible) -->
+  <link rel="stylesheet" href="css/tailwind.css">
+  <!-- Optional Tailwind CDN for runtime utility compilation if online -->
+  <script src="https://cdn.tailwindcss.com" defer></script>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%236366f1'/><text y='.9em' font-size='70' x='15' fill='white'>µ</text></svg>">
+</head>
+<body class="h-full flex flex-col bg-slate-950 text-slate-100 overflow-hidden font-sans select-none">
+
+  <!-- TOP NAVBAR -->
+  <header class="h-14 bg-slate-900 border-b border-slate-800 flex items-center justify-between px-4 shrink-0 z-30">
+    <!-- Brand / Logo -->
+    <div class="flex items-center gap-3">
+      <div class="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center shadow-md">
+        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"></path>
+        </svg>
+      </div>
+      <div>
+        <div class="flex items-center gap-2">
+          <span class="font-bold text-base tracking-tight text-white">IITPSx Studio</span>
+          <span class="badge badge-indigo text-xs">32-Bit Toolchain</span>
+        </div>
+        <p class="text-xs text-slate-400 hidden sm:block">Two-Pass Assembler & Cycle-Accurate Emulator</p>
+      </div>
+    </div>
+
+    <!-- Center Actions: Example Loader & Primary Trigger Buttons -->
+    <div class="flex items-center gap-2.5">
+      <!-- Examples Selector -->
+      <div class="relative">
+        <select id="selectExample" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs rounded-lg px-3 py-2 border border-slate-700 focus:outline-none focus:border-indigo-500 cursor-pointer max-w-xs transition-colors">
+          <option value="" disabled selected>📂 Load Test Example...</option>
+        </select>
+      </div>
+
+      <!-- Assemble Button -->
+      <button id="btnAssemble" class="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs px-3.5 py-2 rounded-lg flex items-center gap-1.5 shadow-md transition-all active:scale-95 cursor-pointer" title="Assemble source code (Ctrl+Enter)">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+        </svg>
+        <span>Assemble & Compile</span>
+        <span class="text-emerald-200 text-xs opacity-75 hidden md:inline ml-1 font-mono">^↵</span>
+      </button>
+
+      <!-- Run Emulator Button -->
+      <button id="btnEmulate" class="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs px-3.5 py-2 rounded-lg flex items-center gap-1.5 shadow-md transition-all active:scale-95 cursor-pointer" title="Run in emulator (Ctrl+Shift+Enter)">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
+        <span>Run Emulator</span>
+      </button>
+    </div>
+
+    <!-- Right Controls: File ops, ISA, Status -->
+    <div class="flex items-center gap-2">
+      <!-- New File -->
+      <button id="btnNew" class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors cursor-pointer" title="New file">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+        </svg>
+      </button>
+
+      <!-- Upload .asm -->
+      <button id="btnUpload" class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors cursor-pointer" title="Upload .asm file">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
+        </svg>
+      </button>
+      <input type="file" id="fileInput" accept=".asm,.s,.txt" class="hidden">
+
+      <!-- Download Dropdown -->
+      <div class="relative">
+        <button id="btnDownloadMenu" class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors cursor-pointer flex items-center gap-1" title="Download files">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+          </svg>
+          <svg class="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+          </svg>
+        </button>
+        <div id="downloadDropdown" class="hidden absolute right-0 mt-2 w-48 bg-slate-900 border border-slate-700 rounded-lg shadow-xl py-1 z-50 text-xs">
+          <button id="dlAsm" class="w-full text-left px-3 py-2 hover:bg-slate-800 flex items-center gap-2 text-slate-200">
+            <span class="text-indigo-400 font-bold">.asm</span> Source File
+          </button>
+          <button id="dlObj" class="w-full text-left px-3 py-2 hover:bg-slate-800 flex items-center gap-2 text-slate-200">
+            <span class="text-purple-400 font-bold">.o</span> Binary Object
+          </button>
+          <button id="dlLst" class="w-full text-left px-3 py-2 hover:bg-slate-800 flex items-center gap-2 text-slate-200">
+            <span class="text-cyan-400 font-bold">.lst</span> Listing File
+          </button>
+          <button id="dlLog" class="w-full text-left px-3 py-2 hover:bg-slate-800 flex items-center gap-2 text-slate-200">
+            <span class="text-amber-400 font-bold">.log</span> Diagnostic Log
+          </button>
+        </div>
+      </div>
+
+      <!-- ISA Reference Toggle -->
+      <button id="btnIsa" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-medium border border-slate-700 transition-colors cursor-pointer flex items-center gap-1.5" title="View IITPSx ISA Reference">
+        <svg class="w-3.5 h-3.5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+        </svg>
+        <span>ISA</span>
+      </button>
+
+      <!-- Status Pill -->
+      <div id="statusBadge" class="flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-slate-800 text-slate-400 border border-slate-700">
+        <span class="w-2 h-2 rounded-full bg-slate-500 status-dot-pulse"></span>
+        <span id="statusText">Ready</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN WORKSPACE: SPLIT PANE -->
+  <main class="flex-1 flex overflow-hidden">
+
+    <!-- LEFT PANE: ASSEMBLY CODE EDITOR -->
+    <section class="w-1/2 flex flex-col border-r border-slate-800 bg-slate-950 min-w-0">
+      <!-- Editor Header -->
+      <div class="h-10 bg-slate-900 border-b border-slate-800 flex items-center justify-between px-3 shrink-0">
+        <div class="flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-indigo-500"></span>
+          <span class="text-xs font-semibold text-slate-200">Assembly Editor</span>
+          <span class="text-xs text-slate-500 font-mono">source.asm</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="text-xs text-slate-400">Shortcuts:</span>
+          <code class="text-xs bg-slate-800 px-1.5 py-0.5 rounded text-indigo-300 font-mono">Ctrl+Enter</code>
+          <span class="text-xs text-slate-500">to compile</span>
+        </div>
+      </div>
+
+      <!-- Editor Canvas Container -->
+      <div class="editor-container flex-1 min-h-0">
+        <div id="editorGutter" class="editor-gutter"></div>
+        <div class="editor-area-wrapper">
+          <textarea id="codeEditor" class="code-textarea" spellcheck="false" placeholder="; Write IITPSx assembly code here...&#10;start:&#10;    ldc 10&#10;    HALT"></textarea>
+        </div>
+      </div>
+
+      <!-- Editor Footer Status -->
+      <div class="h-7 bg-slate-900 border-t border-slate-800 flex items-center justify-between px-3 text-xs text-slate-400 shrink-0 font-mono">
+        <div id="editorStats">Ln 1, Col 1  |  0 lines  |  0 chars</div>
+        <div class="flex items-center gap-4 text-xs">
+          <span>Tab: 4 spaces</span>
+          <span>Encoding: UTF-8</span>
+          <span class="text-emerald-400 font-semibold">IITPSx ISA</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- RIGHT PANE: OUTPUTS & ANALYSIS PANEL -->
+    <section class="w-1/2 flex flex-col bg-slate-900 min-w-0">
+      <!-- Tab Bar -->
+      <div class="h-10 bg-slate-900 border-b border-slate-800 flex items-center justify-between px-2 shrink-0">
+        <div class="flex items-center h-full">
+          <!-- Tab 1: Symbols Table -->
+          <button class="tab-button active" data-tab="symbols">
+            <svg class="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
+            </svg>
+            <span>Symbol Table</span>
+            <span id="badgeSymbols" class="badge badge-indigo">0</span>
+          </button>
+
+          <!-- Tab 2: Listing File (.lst) -->
+          <button class="tab-button" data-tab="listing">
+            <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+            </svg>
+            <span>Listing (.lst)</span>
+          </button>
+
+          <!-- Tab 3: Diagnostic Log (.log) -->
+          <button class="tab-button" data-tab="log">
+            <svg class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+            </svg>
+            <span>Log Output</span>
+            <span id="badgeErrors" class="badge badge-rose hidden">0</span>
+            <span id="badgeWarnings" class="badge badge-amber hidden">0</span>
+          </button>
+
+          <!-- Tab 4: Object File (.o) -->
+          <button class="tab-button" data-tab="object">
+            <svg class="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+            </svg>
+            <span>Object File (.o)</span>
+          </button>
+
+          <!-- Tab 5: Architectural Emulator -->
+          <button class="tab-button" data-tab="emulator">
+            <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+            </svg>
+            <span>Emulator</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Tab Content Area -->
+      <div class="flex-1 bg-slate-950 overflow-hidden relative min-h-0">
+
+        <!-- 1. SYMBOL TABLE TAB -->
+        <div id="tab-symbols" class="tab-pane h-full flex flex-col p-4 overflow-hidden">
+          <!-- Toolbar -->
+          <div class="flex items-center justify-between mb-3 shrink-0">
+            <div class="flex items-center gap-3">
+              <input type="text" id="symbolSearch" placeholder="🔍 Filter symbols..." class="bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-indigo-500 w-56">
+              <span id="symbolTotalCount" class="text-xs text-slate-400 font-mono">0 symbols</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <button id="btnCopySymbolsJson" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-mono transition-colors cursor-pointer" title="Copy symbols as JSON">
+                Copy JSON
+              </button>
+              <button id="btnExportSymbolsCsv" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-mono transition-colors cursor-pointer" title="Export as CSV">
+                Export CSV
+              </button>
+            </div>
+          </div>
+
+          <!-- Table Container -->
+          <div class="flex-1 overflow-auto border border-slate-800 rounded-lg bg-slate-900 min-h-0">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th class="w-12">#</th>
+                  <th>Symbol Identifier</th>
+                  <th>Hex Address/Val</th>
+                  <th>Dec Value</th>
+                  <th>Type</th>
+                  <th>Source Line</th>
+                  <th>Usage Status</th>
+                </tr>
+              </thead>
+              <tbody id="symbolTableBody">
+                <!-- Dynamically populated -->
+              </tbody>
+            </table>
+            <div id="symbolEmptyState" class="p-12 text-center text-slate-500 flex flex-col items-center justify-center gap-2">
+              <svg class="w-8 h-8 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
+              </svg>
+              <span>No symbols available. Compile assembly code to generate the symbol table.</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. LISTING FILE TAB -->
+        <div id="tab-listing" class="tab-pane hidden h-full flex flex-col p-4 overflow-hidden">
+          <!-- Toolbar -->
+          <div class="flex items-center justify-between mb-3 shrink-0">
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-semibold text-slate-300">Listing Output (`.lst`)</span>
+              <span class="text-xs text-slate-500 font-mono">Address | Machine Word | Assembly Source</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <button id="toggleLstView" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-mono transition-colors cursor-pointer">
+                Raw Text View
+              </button>
+              <button id="btnCopyLst" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-mono transition-colors cursor-pointer">
+                Copy Listing
+              </button>
+              <button id="btnDownloadLst" class="px-2.5 py-1 rounded bg-indigo-900/60 hover:bg-indigo-800 text-indigo-200 text-xs font-mono transition-colors cursor-pointer">
+                Download .lst
+              </button>
+            </div>
+          </div>
+
+          <!-- Listing Container -->
+          <div id="lstContainer" class="flex-1 overflow-auto border border-slate-800 rounded-lg bg-slate-900 min-h-0">
+            <div id="lstStructured" class="p-2"></div>
+            <pre id="lstRawText" class="hidden p-4 font-mono text-xs text-slate-300 leading-relaxed overflow-auto"></pre>
+          </div>
+        </div>
+
+        <!-- 3. DIAGNOSTIC LOG TAB -->
+        <div id="tab-log" class="tab-pane hidden h-full flex flex-col p-4 overflow-hidden">
+          <!-- Toolbar -->
+          <div class="flex items-center justify-between mb-3 shrink-0">
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-semibold text-slate-300">Diagnostic Log Output (`.log`)</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <button id="btnCopyLog" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-mono transition-colors cursor-pointer">
+                Copy Log
+              </button>
+              <button id="btnDownloadLog" class="px-2.5 py-1 rounded bg-indigo-900/60 hover:bg-indigo-800 text-indigo-200 text-xs font-mono transition-colors cursor-pointer">
+                Download .log
+              </button>
+            </div>
+          </div>
+
+          <!-- Log Content Area -->
+          <div class="flex-1 overflow-auto border border-slate-800 rounded-lg bg-slate-900 p-4 min-h-0">
+            <!-- Status banner -->
+            <div id="logStatusBanner" class="p-3 rounded-lg bg-slate-800 border border-slate-700 text-slate-300 text-sm mb-4">
+              Awaiting assembly...
+            </div>
+
+            <!-- Diagnostics List (Clickable Error Cards) -->
+            <div id="logDiagnosticsList" class="mb-4"></div>
+
+            <!-- Raw Log Text -->
+            <div class="mt-4 pt-4 border-t border-slate-800">
+              <h4 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 font-mono">Raw Log Stream</h4>
+              <pre id="logRawText" class="p-3 bg-slate-950 border border-slate-800 rounded-lg font-mono text-xs text-slate-300 leading-relaxed overflow-auto"></pre>
+            </div>
+          </div>
+        </div>
+
+        <!-- 4. OBJECT FILE TAB -->
+        <div id="tab-object" class="tab-pane hidden h-full flex flex-col p-4 overflow-hidden">
+          <!-- Toolbar -->
+          <div class="flex items-center justify-between mb-3 shrink-0">
+            <div class="flex items-center gap-3">
+              <span class="text-xs font-semibold text-slate-300">Binary Object Output (`.o`)</span>
+              <span id="objByteSize" class="badge badge-purple">0 bytes</span>
+              <span id="objWordCount" class="badge badge-indigo">0 words</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <button id="btnToggleObjView" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-mono transition-colors cursor-pointer">
+                Decoded Words View
+              </button>
+              <button id="btnCopyObjHex" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-mono transition-colors cursor-pointer">
+                Copy Hex
+              </button>
+              <button id="btnDownloadObj" class="px-2.5 py-1 rounded bg-emerald-900/60 hover:bg-emerald-800 text-emerald-200 text-xs font-mono transition-colors cursor-pointer">
+                Download .o Binary
+              </button>
+            </div>
+          </div>
+
+          <!-- Hexdump & Decoded Words Container -->
+          <div class="flex-1 overflow-auto border border-slate-800 rounded-lg bg-slate-900 min-h-0">
+            <!-- Canonical Hexdump View -->
+            <pre id="objHexdumpText" class="hexdump-viewer p-4 text-xs leading-relaxed overflow-auto text-slate-300"></pre>
+
+            <!-- Decoded 32-bit Words View -->
+            <div id="objWordsTable" class="hidden">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Word #</th>
+                    <th>Address</th>
+                    <th>Machine Hex</th>
+                    <th>Opcode & Mnemonic</th>
+                    <th>Operand (Signed Dec)</th>
+                    <th>Little-Endian Bytes</th>
+                  </tr>
+                </thead>
+                <tbody id="objWordsTableBody">
+                  <!-- Populated dynamically -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- 5. ARCHITECTURAL EMULATOR TAB -->
+        <div id="tab-emulator" class="tab-pane hidden h-full flex flex-col p-4 overflow-hidden">
+          <!-- Emulator Controls Bar -->
+          <div class="bg-slate-900 border border-slate-800 rounded-lg p-3 mb-3 shrink-0 flex flex-wrap items-center justify-between gap-3">
+            <div class="flex items-center gap-4 text-xs text-slate-300">
+              <label class="flex items-center gap-1.5 cursor-pointer">
+                <input type="checkbox" id="emuTraceToggle" checked class="rounded border-slate-700 text-indigo-600 focus:ring-0">
+                <span>Trace (`-trace`)</span>
+              </label>
+              <label class="flex items-center gap-1.5 cursor-pointer">
+                <input type="checkbox" id="emuDumpToggle" checked class="rounded border-slate-700 text-indigo-600 focus:ring-0">
+                <span>Post Dump (`-dump`)</span>
+              </label>
+              <label class="flex items-center gap-1.5 cursor-pointer">
+                <input type="checkbox" id="emuReadToggle" class="rounded border-slate-700 text-indigo-600 focus:ring-0">
+                <span>Mem Read (`-read`)</span>
+              </label>
+              <label class="flex items-center gap-1.5 cursor-pointer">
+                <input type="checkbox" id="emuWriteToggle" class="rounded border-slate-700 text-indigo-600 focus:ring-0">
+                <span>Mem Write (`-write`)</span>
+              </label>
+              <div class="flex items-center gap-1.5">
+                <span class="text-slate-400">Cap:</span>
+                <input type="number" id="emuCycleLimit" value="10000000" class="w-24 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs text-slate-200 font-mono">
+              </div>
+            </div>
+            <div class="flex items-center gap-2">
+              <button id="emuBtnRun" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs rounded-lg shadow transition-colors cursor-pointer flex items-center gap-1.5">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
+                </svg>
+                <span>Run Emulator</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Register State Cards Grid -->
+          <div class="grid grid-cols-5 gap-3 mb-3 shrink-0">
+            <!-- PC -->
+            <div class="p-3 bg-slate-900 border border-slate-800 rounded-lg">
+              <div class="text-xs font-semibold text-slate-400">PC (Program Counter)</div>
+              <div id="regPC" class="text-base font-mono font-bold text-cyan-400 mt-0.5">0x00000000</div>
+              <div id="regPC_dec" class="text-xs font-mono text-slate-500">(0)</div>
+            </div>
+            <!-- SP -->
+            <div class="p-3 bg-slate-900 border border-slate-800 rounded-lg">
+              <div class="text-xs font-semibold text-slate-400">SP (Stack Pointer)</div>
+              <div id="regSP" class="text-base font-mono font-bold text-indigo-400 mt-0.5">0x00000000</div>
+              <div id="regSP_dec" class="text-xs font-mono text-slate-500">(0)</div>
+            </div>
+            <!-- Reg A -->
+            <div class="p-3 bg-slate-900 border border-slate-800 rounded-lg">
+              <div class="text-xs font-semibold text-slate-400">A (Accumulator 1)</div>
+              <div id="regA" class="text-base font-mono font-bold text-emerald-400 mt-0.5">0x00000000</div>
+              <div id="regA_dec" class="text-xs font-mono text-slate-500">(0)</div>
+            </div>
+            <!-- Reg B -->
+            <div class="p-3 bg-slate-900 border border-slate-800 rounded-lg">
+              <div class="text-xs font-semibold text-slate-400">B (Accumulator 2)</div>
+              <div id="regB" class="text-base font-mono font-bold text-amber-400 mt-0.5">0x00000000</div>
+              <div id="regB_dec" class="text-xs font-mono text-slate-500">(0)</div>
+            </div>
+            <!-- Cycles -->
+            <div class="p-3 bg-slate-900 border border-slate-800 rounded-lg">
+              <div class="text-xs font-semibold text-slate-400">Instructions Executed</div>
+              <div id="emuInstCount" class="text-base font-mono font-bold text-purple-400 mt-0.5">0</div>
+              <div class="text-xs font-mono text-slate-500">cycles simulated</div>
+            </div>
+          </div>
+
+          <!-- Emulator Console / Output -->
+          <div class="flex-1 flex flex-col border border-slate-800 rounded-lg bg-slate-950 overflow-hidden min-h-0">
+            <div class="h-8 bg-slate-900 border-b border-slate-800 px-3 flex items-center justify-between shrink-0">
+              <span class="text-xs font-mono font-semibold text-slate-400">Terminal Output Stream</span>
+              <button id="btnCopyEmuOutput" class="text-xs text-slate-400 hover:text-slate-200 font-mono cursor-pointer">
+                Copy Output
+              </button>
+            </div>
+            <pre id="emuTerminalOutput" class="flex-1 p-3 font-mono text-xs text-slate-300 leading-relaxed overflow-auto whitespace-pre">Run the emulator to inspect live execution trace, cycle steps, and memory dumps.</pre>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ISA REFERENCE MODAL -->
+  <div id="isaModal" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center p-6 z-50">
+    <div class="bg-slate-900 border border-slate-700 rounded-xl shadow-2xl w-full max-w-4xl max-h-[85vh] flex flex-col overflow-hidden">
+      <!-- Modal Header -->
+      <div class="p-4 border-b border-slate-800 flex items-center justify-between shrink-0">
+        <div class="flex items-center gap-2">
+          <span class="font-bold text-base text-white">IITPSx Instruction Set Architecture (ISA)</span>
+          <span class="badge badge-emerald">21 Opcodes</span>
+        </div>
+        <button id="btnCloseIsa" class="text-slate-400 hover:text-white p-1 rounded-lg cursor-pointer">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Modal Search -->
+      <div class="p-3 border-b border-slate-800 bg-slate-950 shrink-0">
+        <input type="text" id="isaSearch" placeholder="🔍 Search mnemonic, opcode, or semantics..." class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-indigo-500">
+      </div>
+
+      <!-- Modal Table -->
+      <div class="flex-1 overflow-auto p-4">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Mnemonic</th>
+              <th>Opcode</th>
+              <th>Operand</th>
+              <th>Semantics</th>
+              <th>Description</th>
+            </tr>
+          </thead>
+          <tbody id="isaTableBody">
+            <!-- Dynamically populated -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST NOTIFICATION CONTAINER -->
+  <div id="toastContainer" class="fixed bottom-4 right-4 flex flex-col gap-2 z-50 pointer-events-none"></div>
+
+  <!-- Application Scripts (100% Client-Side Engine) -->
+  <script src="js/isa.js"></script>
+  <script src="js/examples.js"></script>
+  <script src="js/assembler.js"></script>
+  <script src="js/emulator.js"></script>
+  <script src="js/editor.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
